@@ -1,6 +1,5 @@
-import { useScrollToTop, useTheme } from '@react-navigation/native';
 import * as React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 
 type Item = { name: string; number: number };
 
@@ -57,56 +56,48 @@ const CONTACTS: Item[] = [
   { name: 'Vincent Sandoval', number: 2606111495 },
 ];
 
-const ContactItem = React.memo(
-  ({ item }: { item: { name: string; number: number } }) => {
-    const { colors } = useTheme();
+class ContactItem extends React.PureComponent<{
+  item: Item;
+}> {
+  render() {
+    const { item } = this.props;
 
     return (
-      <View style={[styles.item, { backgroundColor: colors.card }]}>
+      <View style={styles.item}>
         <View style={styles.avatar}>
           <Text style={styles.letter}>
             {item.name.slice(0, 1).toUpperCase()}
           </Text>
         </View>
         <View style={styles.details}>
-          <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
-          <Text style={[styles.number, { color: colors.text, opacity: 0.5 }]}>
-            {item.number}
-          </Text>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.number}>{item.number}</Text>
         </View>
       </View>
     );
   }
-);
+}
 
-const ItemSeparator = () => {
-  const { colors } = useTheme();
+export default class Contacts extends React.Component {
+  _renderItem = ({ item }: { item: Item }) => <ContactItem item={item} />;
 
-  return (
-    <View style={[styles.separator, { backgroundColor: colors.border }]} />
-  );
-};
+  _ItemSeparator = () => <View style={styles.separator} />;
 
-export function Contacts() {
-  const ref = React.useRef<FlatList<Item>>(null);
-
-  useScrollToTop(ref);
-
-  const renderItem = ({ item }: { item: Item }) => <ContactItem item={item} />;
-
-  return (
-    <FlatList
-      ref={ref}
-      data={CONTACTS}
-      keyExtractor={(_, i) => String(i)}
-      renderItem={renderItem}
-      ItemSeparatorComponent={ItemSeparator}
-    />
-  );
+  render() {
+    return (
+      <FlatList
+        data={CONTACTS}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={this._renderItem}
+        ItemSeparatorComponent={this._ItemSeparator}
+      />
+    );
+  }
 }
 
 const styles = StyleSheet.create({
   item: {
+    backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
@@ -129,11 +120,14 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: 'bold',
     fontSize: 14,
+    color: 'black',
   },
   number: {
     fontSize: 12,
+    color: '#999',
   },
   separator: {
     height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0, 0, 0, .08)',
   },
 });

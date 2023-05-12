@@ -1,51 +1,14 @@
-import * as CardStyleInterpolators from './TransitionConfigs/CardStyleInterpolators';
-import * as HeaderStyleInterpolators from './TransitionConfigs/HeaderStyleInterpolators';
-import * as TransitionPresets from './TransitionConfigs/TransitionPresets';
-import * as TransitionSpecs from './TransitionConfigs/TransitionSpecs';
+export * from './vendor/index';
 
 /**
  * Navigators
  */
-export { createStackNavigator } from './navigators/createStackNavigator';
-
-/**
- * Views
- */
-export { Header } from './views/Header/Header';
-export { StackView } from './views/Stack/StackView';
-
-/**
- * Transition presets
- */
-export {
-  CardStyleInterpolators,
-  HeaderStyleInterpolators,
-  TransitionPresets,
-  TransitionSpecs,
-};
-
-/**
- * Utilities
- */
-export { CardAnimationContext } from './utils/CardAnimationContext';
-export { GestureHandlerRefContext } from './utils/GestureHandlerRefContext';
-export { useCardAnimation } from './utils/useCardAnimation';
-export { useGestureHandlerRef } from './utils/useGestureHandlerRef';
+export { default as createStackNavigator } from './navigators/createStackNavigator';
 
 /**
  * Types
  */
 export type {
-  StackCardInterpolatedStyle,
-  StackCardInterpolationProps,
-  StackCardStyleInterpolator,
-  StackHeaderInterpolatedStyle,
-  StackHeaderInterpolationProps,
-  StackHeaderProps,
-  StackHeaderStyleInterpolator,
-  StackNavigationEventMap,
-  StackNavigationOptions,
-  StackNavigationProp,
-  StackScreenProps,
-  TransitionPreset,
+  NavigationStackScreenComponent,
+  NavigationStackScreenProps,
 } from './types';

@@ -1,38 +1,41 @@
+import * as DrawerActions from './routers/DrawerActions';
+
 /**
  * Navigators
  */
-export { createDrawerNavigator } from './navigators/createDrawerNavigator';
+export { default as createDrawerNavigator } from './navigators/createDrawerNavigator';
+
+/**
+ * Router
+ */
+export { DrawerActions };
+export { default as DrawerRouter } from './routers/DrawerRouter';
 
 /**
  * Views
  */
-export { DrawerContent } from './views/DrawerContent';
-export { DrawerContentScrollView } from './views/DrawerContentScrollView';
-export { DrawerItem } from './views/DrawerItem';
-export { DrawerItemList } from './views/DrawerItemList';
-export { DrawerToggleButton } from './views/DrawerToggleButton';
-export { DrawerView } from './views/DrawerView';
+export { default as DrawerNavigatorItems } from './views/DrawerNavigatorItems';
+export { default as DrawerItems } from './views/DrawerNavigatorItems';
+export { default as DrawerSidebar } from './views/DrawerSidebar';
+export { default as DrawerView } from './views/DrawerView';
 
-/**
- * Utilities
- */
-export { DrawerStatusContext } from './utils/DrawerStatusContext';
-export { getDrawerStatusFromState } from './utils/getDrawerStatusFromState';
-export { useDrawerStatus } from './utils/useDrawerStatus';
-export {
-  DrawerGestureContext,
-  DrawerProgressContext,
-  useDrawerProgress,
-} from 'react-native-drawer-layout';
+export { default as DrawerGestureContext } from './utils/DrawerGestureContext';
+
+export { default as DrawerProgressContext } from './utils/DrawerProgressContext';
 
 /**
  * Types
  */
-export type {
+export {
+  NavigationDrawerState,
+  NavigationDrawerProp,
+  NavigationDrawerOptions,
+  NavigationDrawerConfig,
+  NavigationDrawerRouterConfig,
+  NavigationDrawerScreenProps,
+  NavigationDrawerScreenComponent,
   DrawerContentComponentProps,
-  DrawerHeaderProps,
-  DrawerNavigationEventMap,
-  DrawerNavigationOptions,
-  DrawerNavigationProp,
-  DrawerScreenProps,
+  DrawerLockMode,
+  DrawerIconProps,
+  DrawerLabelProps,
 } from './types';

@@ -1,328 +1,300 @@
-import {
-  getHeaderTitle,
-  Header,
-  SafeAreaProviderCompat,
-  Screen,
-} from '@react-navigation/elements';
-import {
-  DrawerActions,
-  DrawerNavigationState,
-  DrawerStatus,
-  ParamListBase,
-  useTheme,
-} from '@react-navigation/native';
 import * as React from 'react';
-import { BackHandler, I18nManager, Platform, StyleSheet } from 'react-native';
-import { Drawer } from 'react-native-drawer-layout';
-import { useSafeAreaFrame } from 'react-native-safe-area-context';
-import useLatestCallback from 'use-latest-callback';
+import { Dimensions, StyleSheet, ViewStyle } from 'react-native';
+import {
+  SceneView,
+  ThemeColors,
+  ThemeContext,
+  NavigationScreenProp,
+} from 'react-navigation';
+import { ScreenContainer, screensEnabled } from 'react-native-screens';
 
-import type {
+import * as DrawerActions from '../routers/DrawerActions';
+import DrawerSidebar from './DrawerSidebar';
+import DrawerGestureContext from '../utils/DrawerGestureContext';
+import ResourceSavingScene from './ResourceSavingScene';
+import Drawer from './Drawer';
+import {
+  NavigationDrawerState,
   DrawerContentComponentProps,
-  DrawerDescriptorMap,
-  DrawerHeaderProps,
-  DrawerNavigationConfig,
-  DrawerNavigationHelpers,
-  DrawerNavigationProp,
+  SceneDescriptorMap,
 } from '../types';
-import { DrawerPositionContext } from '../utils/DrawerPositionContext';
-import { DrawerStatusContext } from '../utils/DrawerStatusContext';
-import { getDrawerStatusFromState } from '../utils/getDrawerStatusFromState';
-import { DrawerContent } from './DrawerContent';
-import { DrawerToggleButton } from './DrawerToggleButton';
-import { MaybeScreen, MaybeScreenContainer } from './ScreenFallback';
+import { PanGestureHandler } from 'react-native-gesture-handler';
 
-type Props = DrawerNavigationConfig & {
-  defaultStatus: DrawerStatus;
-  state: DrawerNavigationState<ParamListBase>;
-  navigation: DrawerNavigationHelpers;
-  descriptors: DrawerDescriptorMap;
+type DrawerOptions = {
+  drawerBackgroundColor?: string;
+  overlayColor?: string;
+  minSwipeDistance?: number;
+  drawerPosition: 'left' | 'right';
+  drawerType: 'front' | 'back' | 'slide';
+  drawerLockMode?: 'unlocked' | 'locked-closed' | 'locked-open';
+  keyboardDismissMode?: 'on-drag' | 'none';
+  drawerWidth: number | (() => number);
+  statusBarAnimation: 'slide' | 'none' | 'fade';
+  onDrawerClose?: () => void;
+  onDrawerOpen?: () => void;
+  sceneContainerStyle?: ViewStyle;
+  edgeWidth: number;
+  hideStatusBar?: boolean;
+  style?: ViewStyle;
+  gestureHandlerProps?: React.ComponentProps<typeof PanGestureHandler>;
 };
 
-function DrawerViewBase({
-  state,
-  navigation,
-  descriptors,
-  defaultStatus,
-  drawerContent = (props: DrawerContentComponentProps) => (
-    <DrawerContent {...props} />
-  ),
-  detachInactiveScreens = Platform.OS === 'web' ||
-    Platform.OS === 'android' ||
-    Platform.OS === 'ios',
-}: Props) {
-  const focusedRouteKey = state.routes[state.index].key;
-  const {
-    drawerHideStatusBarOnOpen,
-    drawerPosition = I18nManager.getConstants().isRTL ? 'right' : 'left',
-    drawerStatusBarAnimation,
-    drawerStyle,
-    drawerType,
-    gestureHandlerProps,
-    keyboardDismissMode,
-    overlayColor = 'rgba(0, 0, 0, 0.5)',
-    swipeEdgeWidth,
-    swipeEnabled = Platform.OS !== 'web' &&
-      Platform.OS !== 'windows' &&
-      Platform.OS !== 'macos',
-    swipeMinDistance,
-    overlayAccessibilityLabel,
-  } = descriptors[focusedRouteKey].options;
+type Props = {
+  lazy: boolean;
+  navigation: NavigationScreenProp<NavigationDrawerState>;
+  descriptors: SceneDescriptorMap;
+  navigationConfig: DrawerOptions & {
+    contentComponent?: React.ComponentType<DrawerContentComponentProps>;
+    unmountInactiveRoutes?: boolean;
+    contentOptions?: object;
+  };
+  screenProps: unknown;
+  detachInactiveScreens: boolean;
+};
 
-  const [loaded, setLoaded] = React.useState([focusedRouteKey]);
+type State = {
+  loaded: number[];
+  drawerWidth: number;
+};
 
-  if (!loaded.includes(focusedRouteKey)) {
-    setLoaded([...loaded, focusedRouteKey]);
+/**
+ * Component that renders the drawer.
+ */
+export default class DrawerView extends React.PureComponent<Props, State> {
+  // eslint-disable-next-line react/sort-comp
+  static contextType = ThemeContext;
+  static defaultProps = {
+    lazy: true,
+  };
+
+  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
+    const { index } = nextProps.navigation.state;
+
+    return {
+      // Set the current tab to be loaded if it was not loaded before
+      loaded: prevState.loaded.includes(index)
+        ? prevState.loaded
+        : [...prevState.loaded, index],
+    };
   }
 
-  const dimensions = useSafeAreaFrame();
+  state: State = {
+    loaded: [this.props.navigation.state.index],
+    drawerWidth:
+      typeof this.props.navigationConfig.drawerWidth === 'function'
+        ? this.props.navigationConfig.drawerWidth()
+        : this.props.navigationConfig.drawerWidth,
+  };
 
-  const { colors } = useTheme();
-
-  const drawerStatus = getDrawerStatusFromState(state);
-
-  const handleDrawerOpen = useLatestCallback(() => {
-    navigation.dispatch({
-      ...DrawerActions.openDrawer(),
-      target: state.key,
-    });
-  });
-
-  const handleDrawerClose = useLatestCallback(() => {
-    navigation.dispatch({
-      ...DrawerActions.closeDrawer(),
-      target: state.key,
-    });
-  });
-
-  const handleGestureStart = useLatestCallback(() => {
-    navigation.emit({
-      type: 'gestureStart',
-      target: state.key,
-    });
-  });
-
-  const handleGestureEnd = useLatestCallback(() => {
-    navigation.emit({
-      type: 'gestureEnd',
-      target: state.key,
-    });
-  });
-
-  const handleGestureCancel = useLatestCallback(() => {
-    navigation.emit({
-      type: 'gestureCancel',
-      target: state.key,
-    });
-  });
-
-  const handleTransitionStart = useLatestCallback((closing: boolean) => {
-    navigation.emit({
-      type: 'transitionStart',
-      data: { closing },
-      target: state.key,
-    });
-  });
-
-  const handleTransitionEnd = useLatestCallback((closing: boolean) => {
-    navigation.emit({
-      type: 'transitionEnd',
-      data: { closing },
-      target: state.key,
-    });
-  });
-
-  React.useEffect(() => {
-    if (drawerStatus === defaultStatus || drawerType === 'permanent') {
-      return;
+  componentDidMount() {
+    // If drawerLockMode was set to `locked-open`, we should open the drawer on mount
+    if (this.getLockMode(this.props) === 'locked-open') {
+      this.handleDrawerOpen();
     }
 
-    const handleHardwareBack = () => {
-      // We shouldn't handle the back button if the parent screen isn't focused
-      // This will avoid the drawer overriding event listeners from a focused screen
-      if (!navigation.isFocused()) {
-        return false;
-      }
+    Dimensions.addEventListener('change', this.updateWidth);
+  }
 
-      if (defaultStatus === 'open') {
-        handleDrawerOpen();
+  componentDidUpdate(prevProps: Props) {
+    const prevLockMode = this.getLockMode(prevProps);
+    const nextLockMode = this.getLockMode(this.props);
+
+    if (prevLockMode !== nextLockMode) {
+      if (nextLockMode === 'locked-open') {
+        this.handleDrawerOpen();
       } else {
-        handleDrawerClose();
+        this.handleDrawerClose();
       }
-
-      return true;
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleHardwareBack();
-      }
-    };
-
-    // We only add the listeners when drawer opens
-    // This way we can make sure that the listener is added as late as possible
-    // This will make sure that our handler will run first when back button is pressed
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleHardwareBack
-    );
-
-    if (Platform.OS === 'web') {
-      document?.body?.addEventListener?.('keyup', handleEscape);
     }
+  }
 
-    return () => {
-      subscription.remove();
+  componentWillUnmount() {
+    Dimensions.removeEventListener('change', this.updateWidth);
+  }
 
-      if (Platform.OS === 'web') {
-        document?.body?.removeEventListener?.('keyup', handleEscape);
-      }
-    };
-  }, [
-    defaultStatus,
-    drawerStatus,
-    drawerType,
-    handleDrawerClose,
-    handleDrawerOpen,
-    navigation,
-  ]);
+  context!: React.ContextType<typeof ThemeContext>;
 
-  const renderDrawerContent = () => {
-    return (
-      <DrawerPositionContext.Provider value={drawerPosition}>
-        {drawerContent({
-          state: state,
-          navigation: navigation,
-          descriptors: descriptors,
-        })}
-      </DrawerPositionContext.Provider>
+  private drawerGestureRef = React.createRef<PanGestureHandler>();
+
+  private getLockMode = ({ navigation, descriptors }: Props) => {
+    const activeKey = navigation.state.routes[navigation.state.index].key;
+    const { drawerLockMode } = descriptors[activeKey].options;
+
+    return drawerLockMode;
+  };
+
+  private handleDrawerOpen = () => {
+    const { navigation } = this.props;
+
+    navigation.dispatch(
+      DrawerActions.openDrawer({
+        key: navigation.state.key,
+      })
     );
   };
 
-  const renderSceneContent = () => {
+  private handleDrawerClose = () => {
+    const { navigation } = this.props;
+
+    navigation.dispatch(
+      DrawerActions.closeDrawer({
+        key: navigation.state.key,
+      })
+    );
+  };
+
+  private updateWidth = () => {
+    const drawerWidth =
+      typeof this.props.navigationConfig.drawerWidth === 'function'
+        ? this.props.navigationConfig.drawerWidth()
+        : this.props.navigationConfig.drawerWidth;
+
+    if (this.state.drawerWidth !== drawerWidth) {
+      this.setState({ drawerWidth });
+    }
+  };
+
+  private renderNavigationView = ({ progress }: any) => {
     return (
-      <MaybeScreenContainer
-        enabled={detachInactiveScreens}
-        hasTwoStates
-        style={styles.content}
-      >
-        {state.routes.map((route, index) => {
-          const descriptor = descriptors[route.key];
-          const { lazy = true, unmountOnBlur } = descriptor.options;
-          const isFocused = state.index === index;
+      <DrawerSidebar
+        screenProps={this.props.screenProps}
+        drawerOpenProgress={progress}
+        navigation={this.props.navigation}
+        descriptors={this.props.descriptors}
+        {...this.props.navigationConfig}
+      />
+    );
+  };
 
-          if (unmountOnBlur && !isFocused) {
-            return null;
-          }
+  private renderContent = () => {
+    let { lazy, navigation, detachInactiveScreens = true } = this.props;
+    let { loaded } = this.state;
+    let { routes } = navigation.state;
 
-          if (lazy && !loaded.includes(route.key) && !isFocused) {
-            // Don't render a lazy screen if we've never navigated to it
-            return null;
-          }
+    if (this.props.navigationConfig.unmountInactiveRoutes) {
+      let activeKey = navigation.state.routes[navigation.state.index].key;
+      let descriptor = this.props.descriptors[activeKey];
 
-          const {
-            freezeOnBlur,
-            header = ({ layout, options }: DrawerHeaderProps) => (
-              <Header
-                {...options}
-                layout={layout}
-                title={getHeaderTitle(options, route.name)}
-                headerLeft={
-                  options.headerLeft ??
-                  ((props) => <DrawerToggleButton {...props} />)
-                }
-              />
-            ),
-            headerShown,
-            headerStatusBarHeight,
-            headerTransparent,
-            sceneContainerStyle,
-          } = descriptor.options;
+      return (
+        <SceneView
+          navigation={descriptor.navigation}
+          screenProps={this.props.screenProps}
+          component={descriptor.getComponent()}
+        />
+      );
+    } else {
+      const enabled = screensEnabled?.() && detachInactiveScreens;
 
-          return (
-            <MaybeScreen
-              key={route.key}
-              style={[StyleSheet.absoluteFill, { zIndex: isFocused ? 0 : -1 }]}
-              visible={isFocused}
-              enabled={detachInactiveScreens}
-              freezeOnBlur={freezeOnBlur}
-            >
-              <Screen
-                focused={isFocused}
-                route={descriptor.route}
-                navigation={descriptor.navigation}
-                headerShown={headerShown}
-                headerStatusBarHeight={headerStatusBarHeight}
-                headerTransparent={headerTransparent}
-                header={header({
-                  layout: dimensions,
-                  route: descriptor.route,
-                  navigation:
-                    descriptor.navigation as DrawerNavigationProp<ParamListBase>,
-                  options: descriptor.options,
-                })}
-                style={sceneContainerStyle}
+      return (
+        // @ts-ignore
+        <ScreenContainer enabled={enabled} style={styles.content}>
+          {routes.map((route, index) => {
+            if (lazy && !loaded.includes(index)) {
+              // Don't render a screen if we've never navigated to it
+              return null;
+            }
+
+            let isFocused = navigation.state.index === index;
+            let descriptor = this.props.descriptors[route.key];
+
+            return (
+              <ResourceSavingScene
+                key={route.key}
+                style={[
+                  StyleSheet.absoluteFill,
+                  { opacity: isFocused ? 1 : 0 },
+                ]}
+                isVisible={isFocused}
+                enabled={detachInactiveScreens}
               >
-                {descriptor.render()}
-              </Screen>
-            </MaybeScreen>
-          );
-        })}
-      </MaybeScreenContainer>
-    );
+                <SceneView
+                  navigation={descriptor.navigation}
+                  screenProps={this.props.screenProps}
+                  component={descriptor.getComponent()}
+                />
+              </ResourceSavingScene>
+            );
+          })}
+        </ScreenContainer>
+      );
+    }
   };
 
-  return (
-    <DrawerStatusContext.Provider value={drawerStatus}>
-      <Drawer
-        open={drawerStatus !== 'closed'}
-        onOpen={handleDrawerOpen}
-        onClose={handleDrawerClose}
-        onGestureStart={handleGestureStart}
-        onGestureEnd={handleGestureEnd}
-        onGestureCancel={handleGestureCancel}
-        onTransitionStart={handleTransitionStart}
-        onTransitionEnd={handleTransitionEnd}
-        layout={dimensions}
-        gestureHandlerProps={gestureHandlerProps}
-        swipeEnabled={swipeEnabled}
-        swipeEdgeWidth={swipeEdgeWidth}
-        swipeMinDistance={swipeMinDistance}
-        hideStatusBarOnOpen={drawerHideStatusBarOnOpen}
-        statusBarAnimation={drawerStatusBarAnimation}
-        keyboardDismissMode={keyboardDismissMode}
-        drawerType={drawerType}
-        overlayAccessibilityLabel={overlayAccessibilityLabel}
-        drawerPosition={drawerPosition}
-        drawerStyle={[
-          { backgroundColor: colors.card },
-          drawerType === 'permanent' &&
-            (drawerPosition === 'left'
-              ? {
-                  borderRightColor: colors.border,
-                  borderRightWidth: StyleSheet.hairlineWidth,
-                }
-              : {
-                  borderLeftColor: colors.border,
-                  borderLeftWidth: StyleSheet.hairlineWidth,
-                }),
-          drawerStyle,
-        ]}
-        overlayStyle={{ backgroundColor: overlayColor }}
-        renderDrawerContent={renderDrawerContent}
-      >
-        {renderSceneContent()}
-      </Drawer>
-    </DrawerStatusContext.Provider>
-  );
-}
+  private setDrawerGestureRef = (ref: PanGestureHandler | null) => {
+    // @ts-ignore
+    this.drawerGestureRef.current = ref;
+  };
 
-export function DrawerView({ navigation, ...rest }: Props) {
-  return (
-    <SafeAreaProviderCompat>
-      <DrawerViewBase navigation={navigation} {...rest} />
-    </SafeAreaProviderCompat>
-  );
+  private getDrawerBackgroundColor() {
+    const { drawerBackgroundColor } = this.props.navigationConfig;
+
+    if (drawerBackgroundColor) {
+      return typeof drawerBackgroundColor === 'string'
+        ? drawerBackgroundColor
+        : drawerBackgroundColor[this.context];
+    } else {
+      return ThemeColors[this.context].bodyContent;
+    }
+  }
+
+  private getOverlayColor() {
+    const { overlayColor } = this.props.navigationConfig;
+
+    if (overlayColor) {
+      return typeof overlayColor === 'string'
+        ? overlayColor
+        : overlayColor[this.context];
+    } else {
+      return 'rgba(0,0,0,0.5)';
+    }
+  }
+
+  render() {
+    const { navigation, navigationConfig } = this.props;
+    const {
+      drawerType,
+      sceneContainerStyle,
+      edgeWidth,
+      minSwipeDistance,
+      hideStatusBar,
+      statusBarAnimation,
+      gestureHandlerProps,
+    } = navigationConfig;
+
+    const drawerLockMode = this.getLockMode(this.props);
+    const drawerBackgroundColor = this.getDrawerBackgroundColor();
+    const overlayColor = this.getOverlayColor();
+
+    return (
+      <DrawerGestureContext.Provider value={this.drawerGestureRef}>
+        <Drawer
+          open={navigation.state.isDrawerOpen}
+          gestureEnabled={
+            drawerLockMode !== 'locked-open' &&
+            drawerLockMode !== 'locked-closed'
+          }
+          onOpen={this.handleDrawerOpen}
+          onClose={this.handleDrawerClose}
+          onGestureRef={this.setDrawerGestureRef}
+          gestureHandlerProps={gestureHandlerProps}
+          drawerType={drawerType}
+          drawerPosition={this.props.navigationConfig.drawerPosition}
+          sceneContainerStyle={sceneContainerStyle}
+          drawerStyle={{
+            backgroundColor: drawerBackgroundColor,
+            width: this.state.drawerWidth,
+          }}
+          overlayStyle={{ backgroundColor: overlayColor }}
+          swipeEdgeWidth={edgeWidth}
+          swipeDistanceThreshold={minSwipeDistance}
+          hideStatusBar={hideStatusBar}
+          statusBarAnimation={statusBarAnimation}
+          renderDrawerContent={this.renderNavigationView}
+          renderSceneContent={this.renderContent}
+        />
+      </DrawerGestureContext.Provider>
+    );
+  }
 }
 
 const styles = StyleSheet.create({

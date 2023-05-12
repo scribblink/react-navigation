@@ -2,15 +2,19 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@react-navigation/*": ["./packages/*/src"],
-      "react-native-drawer-layout": ["./packages/react-native-drawer-layout/src"],
-      "react-native-tab-view": ["./packages/react-native-tab-view/src"],
+      "@react-navigation/core": ["./packages/core/src"],
+      "@react-navigation/native": ["./packages/native/src"],
+      "react-navigation": ["./packages/react-navigation/src"],
+      "react-navigation-animated-switch": ["./packages/animated-switch/src"],
+      "react-navigation-drawer": ["./packages/drawer/src"],
+      "react-navigation-material-bottom-tabs": ["./packages/material-bottom-tabs/src"],
+      "react-navigation-stack": ["./packages/stack/src"],
+      "react-navigation-tabs": ["./packages/tabs/src"],
     },
     "composite": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "esModuleInterop": true,
-    "importsNotUsedAsValues": "error",
     "forceConsistentCasingInFileNames": true,
     "jsx": "react",
     "lib": ["esnext", "dom"],
@@ -26,6 +30,5 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "esnext"
-  },
-  "exclude": ["packages/*/lib"]
+  }
 }

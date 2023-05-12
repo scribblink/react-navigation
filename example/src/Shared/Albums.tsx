@@ -1,95 +1,45 @@
 /* eslint-disable import/no-commonjs */
 
-import { useScrollToTop } from '@react-navigation/native';
 import * as React from 'react';
-import {
-  Image,
-  Platform,
-  ScrollView,
-  ScrollViewProps,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Image, Dimensions, ScrollView, StyleSheet } from 'react-native';
 
 const COVERS = [
-  require('../../assets/album-art-01.jpg'),
-  require('../../assets/album-art-02.jpg'),
-  require('../../assets/album-art-03.jpg'),
-  require('../../assets/album-art-04.jpg'),
-  require('../../assets/album-art-05.jpg'),
-  require('../../assets/album-art-06.jpg'),
-  require('../../assets/album-art-07.jpg'),
-  require('../../assets/album-art-08.jpg'),
-  require('../../assets/album-art-09.jpg'),
-  require('../../assets/album-art-10.jpg'),
-  require('../../assets/album-art-11.jpg'),
-  require('../../assets/album-art-12.jpg'),
-  require('../../assets/album-art-13.jpg'),
-  require('../../assets/album-art-14.jpg'),
-  require('../../assets/album-art-15.jpg'),
-  require('../../assets/album-art-16.jpg'),
-  require('../../assets/album-art-17.jpg'),
-  require('../../assets/album-art-18.jpg'),
-  require('../../assets/album-art-19.jpg'),
-  require('../../assets/album-art-20.jpg'),
-  require('../../assets/album-art-21.jpg'),
-  require('../../assets/album-art-22.jpg'),
-  require('../../assets/album-art-23.jpg'),
-  require('../../assets/album-art-24.jpg'),
+  require('../assets/album-art-1.jpg'),
+  require('../assets/album-art-2.jpg'),
+  require('../assets/album-art-3.jpg'),
+  require('../assets/album-art-4.jpg'),
+  require('../assets/album-art-5.jpg'),
+  require('../assets/album-art-6.jpg'),
+  require('../assets/album-art-7.jpg'),
+  require('../assets/album-art-8.jpg'),
 ];
 
-export function Albums(props: Partial<ScrollViewProps>) {
-  const dimensions = useWindowDimensions();
-
-  const ref = React.useRef<ScrollView>(null);
-
-  useScrollToTop(ref);
-
-  const itemSize = dimensions.width / Math.floor(dimensions.width / 150);
-
-  return (
-    <ScrollView ref={ref} contentContainerStyle={styles.content} {...props}>
-      {COVERS.map((source, i) => (
-        <View
+export default class Albums extends React.Component {
+  render() {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
+        {COVERS.map((source, i) => (
           // eslint-disable-next-line react/no-array-index-key
-          key={i}
-          style={[
-            styles.item,
-            Platform.OS !== 'web' && {
-              height: itemSize,
-              width: itemSize,
-            },
-          ]}
-        >
-          <Image source={source} style={styles.photo} />
-        </View>
-      ))}
-    </ScrollView>
-  );
+          <Image key={i} source={source} style={styles.cover} />
+        ))}
+      </ScrollView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
-  ...Platform.select({
-    web: {
-      content: {
-        display: 'grid' as 'none',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      },
-      item: {
-        width: '100%',
-      },
-    },
-    default: {
-      content: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-      },
-    },
-  }),
-  photo: {
-    flex: 1,
-    resizeMode: 'cover',
-    paddingTop: '100%',
+  container: {
+    backgroundColor: '#343C46',
+  },
+  content: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  cover: {
+    width: '50%',
+    height: Dimensions.get('window').width / 2,
   },
 });
