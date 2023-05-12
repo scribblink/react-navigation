@@ -10,10 +10,7 @@ export default function (WrappedComponent) {
       super();
 
       const isLandscape = isOrientationLandscape(Dimensions.get('window'));
-      this.state = {
-        isLandscape: _isLandscape,
-        eventListener: null
-      };
+      localStorage
     }
 
     componentDidMount() {
